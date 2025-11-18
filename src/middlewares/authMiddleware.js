@@ -1,19 +1,30 @@
 // src/middlewares/authMiddleware.js
 import jwt from "jsonwebtoken";
 import { jwtSecret } from "../config/jwt.js";
+import { PrismaClient } from "@prisma/client";
 
-export function authMiddleware(req, res, next) {
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
+
+export async function requireAuth(req, res, next) {
   try {
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    if (!token) return res.status(401).json({ error: "Token não fornecido." });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ status: "error", error: "Token missing" });
+    }
 
-    const payload = jwt.verify(token, jwtSecret);
-    // payload deve conter { id: userId } conforme login
-    req.userId = payload.id;
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    // attach user to request (fetch from DB to ensure fresh)
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    if (!user) return res.status(401).json({ status: "error", error: "Invalid token" });
+
+    // remove sensitive field
+    const { password, ...userSafe } = user;
+    req.user = userSafe;
     next();
   } catch (err) {
-    console.error("authMiddleware error:", err);
-    return res.status(401).json({ error: "Token inválido ou expirado." });
+    return res.status(401).json({ status: "error", error: "Invalid or expired token" });
   }
 }

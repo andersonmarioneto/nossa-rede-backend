@@ -3,40 +3,30 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { jwtSecret } from "../config/jwt.js";
 import { handleError } from "../utils/handleError.js";
+import { registerUser, loginUser } from "../services/authService.js";
+import { success, error } from "../utils/responseUtil.js";
 
-export const register = async (req, res) => {
+export async function register(req, res) {
   try {
-    const { name, email, password } = req.body;
-
-    const exists = await prisma.user.findUnique({ where: { email } });
-    if (exists) return res.status(400).json({ error: "E-mail já cadastrado." });
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: { name, email, password: hashed },
-    });
-
-    return res.json({ message: "Conta criada com sucesso!", user });
-  } catch (error) {
-    handleError(res, error);
+    const payload = req.body;
+    const user = await registerUser(payload);
+    return success(res, { message: "Usuário criado", user }, 201);
+  } catch (err) {
+    return error(res, err.message || "Erro ao registrar", 400);
   }
-};
+}
 
-export const login = async (req, res) => {
+export async function login(req, res) {
   try {
     const { email, password } = req.body;
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(400).json({ error: "E-mail não encontrado." });
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ error: "Senha incorreta." });
-
-    const token = jwt.sign({ id: user.id }, jwtSecret, { expiresIn: "7d" });
-
-    return res.json({ message: "Login realizado!", token, user });
-  } catch (error) {
-    handleError(res, error);
+    const { token, user } = await loginUser({ email, password });
+    return success(res, { message: "Login bem-sucedido", token, user });
+  } catch (err) {
+    return error(res, err.message || "Erro no login", 400);
   }
-};
+}
+
+export async function me(req, res) {
+  // requireAuth middleware attaches req.user
+  return success(res, { user: req.user });
+}
