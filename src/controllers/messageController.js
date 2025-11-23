@@ -13,8 +13,13 @@ export async function messagesByConversation(req, res) {
 
 export async function createMessageController(req, res) {
   try {
-    const { conversationId, senderId, content, type } = req.body;
+    const { conversationId, content, type } = req.body;
+    const senderId = req.user.id;
     const message = await createMessage({ conversationId, senderId, content, type });
+
+    const io = req.app.get("io");
+    io.to(`conversation_${conversationId}`).emit("new_message", message);
+
     return success(res, { message }, 201);
   } catch (err) {
     return error(res, err.message || "Erro ao criar mensagem", 400);

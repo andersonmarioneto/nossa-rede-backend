@@ -94,3 +94,21 @@ export const updateMyProfile = async (req, res) => {
     return handleError(res, error);
   }
 };
+export async function getAllUsers(req, res) {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        avatarUrl: true,
+        bio: true,
+        createdAt: true
+      }
+    });
+
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Erro ao listar usuários" });
+  }
+}

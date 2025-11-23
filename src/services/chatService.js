@@ -4,7 +4,19 @@ const prisma = new PrismaClient();
 export async function getConversationsByUser(userId) {
   const parts = await prisma.participant.findMany({
     where: { userId: Number(userId) },
-    include: { conversation: true },
+    include: {
+      conversation: {
+        include: {
+          participants: {
+            include: { user: { select: { id: true, name: true, avatarUrl: true } } }
+          },
+          messages: {
+            take: 1,
+            orderBy: { createdAt: "desc" }
+          }
+        }
+      }
+    },
   });
   return parts.map(p => p.conversation);
 }
@@ -25,5 +37,6 @@ export async function createMessage({ conversationId, senderId, content, type = 
       content,
       type,
     },
+    include: { sender: { select: { id: true, name: true, username: true, email: true, avatarUrl: true } } },
   });
 }
