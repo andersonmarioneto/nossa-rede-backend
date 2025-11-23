@@ -23,6 +23,7 @@ export async function requireAuth(req, res, next) {
     // remove sensitive field
     const { password, ...userSafe } = user;
     req.user = userSafe;
+    req.userId = user.id;
     next();
   } catch (err) {
     return res.status(401).json({ status: "error", error: "Invalid or expired token" });

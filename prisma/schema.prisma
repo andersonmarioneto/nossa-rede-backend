@@ -14,7 +14,10 @@ model User {
   email     String   @unique
   password  String
   avatarUrl String? 
+  coverUrl  String?
   bio       String? 
+  status    String?
+  socialLinks String? // Armazenado como JSON string
   createdAt DateTime @default(now())
   messages    Message[]
   participants Participant[]

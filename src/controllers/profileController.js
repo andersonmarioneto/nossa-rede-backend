@@ -15,7 +15,10 @@ export const getPublicProfile = async (req, res) => {
         username: true,
         email: false,      // não retornar email no perfil público
         avatarUrl: true,
+        coverUrl: true,
         bio: true,
+        status: true,
+        socialLinks: true,
         createdAt: true,
       },
     });
@@ -39,7 +42,10 @@ export const getMyProfile = async (req, res) => {
         username: true,
         email: true,
         avatarUrl: true,
+        coverUrl: true,
         bio: true,
+        status: true,
+        socialLinks: true,
         createdAt: true,
       },
     });
@@ -55,7 +61,25 @@ export const getMyProfile = async (req, res) => {
 export const updateMyProfile = async (req, res) => {
   try {
     const userId = Number(req.userId);
-    const { name, username, bio, avatarUrl } = req.body;
+    const { name, username, bio, status, socialLinks } = req.body;
+
+    // Processar arquivos enviados
+    let avatarUrl = undefined;
+    let coverUrl = undefined;
+    const baseUrl = process.env.BASE_URL || "http://localhost:4000"; // Ajuste conforme env
+
+    if (req.files) {
+      if (req.files.avatar) {
+        avatarUrl = `${baseUrl}/uploads/${req.files.avatar[0].filename}`;
+      }
+      if (req.files.cover) {
+        coverUrl = `${baseUrl}/uploads/${req.files.cover[0].filename}`;
+      }
+    }
+
+    // Se o usuário enviou URL de texto (legado ou externo), usamos ela se não houver arquivo novo
+    // Mas o frontend agora vai priorizar o arquivo.
+    // Se quiser manter suporte a URL direta via texto, pode verificar req.body.avatarUrl também.
 
     // validação simples (podes expandir)
     if (username && typeof username !== "string") {
@@ -77,6 +101,9 @@ export const updateMyProfile = async (req, res) => {
         username: username ?? undefined,
         bio: bio ?? undefined,
         avatarUrl: avatarUrl ?? undefined,
+        coverUrl: coverUrl ?? undefined,
+        status: status ?? undefined,
+        socialLinks: socialLinks ?? undefined,
       },
       select: {
         id: true,
@@ -84,7 +111,10 @@ export const updateMyProfile = async (req, res) => {
         username: true,
         email: true,
         avatarUrl: true,
+        coverUrl: true,
         bio: true,
+        status: true,
+        socialLinks: true,
         createdAt: true,
       },
     });
@@ -94,21 +124,27 @@ export const updateMyProfile = async (req, res) => {
     return handleError(res, error);
   }
 };
-export async function getAllUsers(req, res) {
+
+export const getAllUsers = async (req, res) => {
   try {
+    const userId = Number(req.userId);
     const users = await prisma.user.findMany({
+      where: {
+        id: {
+          not: userId, // Exclui o próprio usuário
+        },
+      },
       select: {
         id: true,
         name: true,
         username: true,
         avatarUrl: true,
-        bio: true,
-        createdAt: true
-      }
+        status: true,
+      },
     });
-
-    res.json({ success: true, users });
+    res.json({ users });
   } catch (error) {
-    res.status(500).json({ success: false, error: "Erro ao listar usuários" });
+    console.error("Erro ao buscar usuários:", error);
+    res.status(500).json({ error: "Erro ao buscar usuários." });
   }
-}
+};
