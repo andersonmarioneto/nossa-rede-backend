@@ -12,7 +12,10 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "https://nossa-rede-frontend.vercel.app",
+    ],
     credentials: true
   }
 });
@@ -34,7 +37,10 @@ io.on("connection", (socket) => {
 
 //app.use(cors());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: [
+    "http://localhost:3000",
+    "https://nossa-rede-frontend.vercel.app",
+  ],
   credentials: true
 }));
 
