@@ -52,7 +52,15 @@ app.get("/", (req, res) => {
   res.json({ message: "API Nossa.Rede funcionando!" });
 });
 
-const PORT = process.env.PORT || 4000;
-httpServer.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+
+// Export app for Vercel
+export { app };
+
+// Only listen if run directly (not imported)
+import { fileURLToPath } from 'url';
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const PORT = process.env.PORT || 4000;
+  httpServer.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
+}
